@@ -18,7 +18,7 @@ Lithium is based on Photon. The first 1,999 blocks awarded a reduced amount to b
 | Block reward | 48 LIT (0.48 for blocks 1–1999), halving annually |
 | Difficulty retarget | Every 20 blocks (max 15% until block 3500, then 3%) |
 | Default port | 12007 |
-| RPC port | 12000 |
+| RPC port | 12345 |
 | Max supply | 25,228,800 LIT |
 
 ---
@@ -163,6 +163,7 @@ Uses `sidgrip/osxcross-base:latest` Docker image with osxcross cross-compiler.
 
 ```
 outputs/
+├── lithium.conf        Auto-generated config with RPC credentials and peers
 ├── native/
 │   ├── daemon/         lithiumd
 │   └── qt/             lithium-qt
@@ -176,7 +177,7 @@ outputs/
     └── qt/             Lithium-Qt.app
 ```
 
-Each output directory includes a `build-info.txt` with OS version and build details.
+The config file is auto-generated on first build with random RPC credentials, active peers from the network, and default settings. Copy it to `~/.lithium/lithium.conf` before running the daemon.
 
 ## Docker Images
 
