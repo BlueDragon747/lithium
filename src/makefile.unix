@@ -5,7 +5,8 @@
 # :=0 --> UPnP support turned off by default at runtime
 # :=1 --> UPnP support turned on by default at runtime
 # :=- --> No UPnP support - miniupnp not required
-USE_UPNP:=1
+# Default disabled: :=1 causes boost::lock_error on macOS (osxcross pthreads incompatibility)
+USE_UPNP:=-
 
 # :=1 --> Enable IPv6 support
 # :=0 --> Disable IPv6 support
@@ -48,7 +49,7 @@ TESTLIBS += \
    -l boost_unit_test_framework$(BOOST_LIB_SUFFIX)
 
 ifndef USE_UPNP
-	override USE_UPNP = 1
+	override USE_UPNP = -
 endif
 ifneq (${USE_UPNP}, -)
 	LIBS += -l miniupnpc
