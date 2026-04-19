@@ -10,11 +10,11 @@ SetCompressor /SOLID lzma
 !define URL https://github.com/BlueDragon747/lithium
 
 # MUI Symbol Definitions
-!define MUI_ICON "/home/sid/Blakestream-Installer/repos/lithium-0.15.2-update/share/pixmaps/Blakecoin.ico"
-!define MUI_WELCOMEFINISHPAGE_BITMAP "/home/sid/Blakestream-Installer/repos/lithium-0.15.2-update/share/pixmaps/nsis-wizard.bmp"
+!define MUI_ICON "/home/sid/Blakestream-Installer/repos/lithium-0.15.21/share/pixmaps/Blakecoin.ico"
+!define MUI_WELCOMEFINISHPAGE_BITMAP "/home/sid/Blakestream-Installer/repos/lithium-0.15.21/share/pixmaps/nsis-wizard.bmp"
 !define MUI_HEADERIMAGE
 !define MUI_HEADERIMAGE_RIGHT
-!define MUI_HEADERIMAGE_BITMAP "/home/sid/Blakestream-Installer/repos/lithium-0.15.2-update/share/pixmaps/nsis-header.bmp"
+!define MUI_HEADERIMAGE_BITMAP "/home/sid/Blakestream-Installer/repos/lithium-0.15.21/share/pixmaps/nsis-header.bmp"
 !define MUI_FINISHPAGE_NOAUTOCLOSE
 !define MUI_STARTMENUPAGE_REGISTRY_ROOT HKLM
 !define MUI_STARTMENUPAGE_REGISTRY_KEY ${REGKEY}
@@ -22,7 +22,7 @@ SetCompressor /SOLID lzma
 !define MUI_STARTMENUPAGE_DEFAULTFOLDER "Lithium Core"
 !define MUI_FINISHPAGE_RUN $INSTDIR\lithium-qt
 !define MUI_UNICON "${NSISDIR}\Contrib\Graphics\Icons\modern-uninstall.ico"
-!define MUI_UNWELCOMEFINISHPAGE_BITMAP "/home/sid/Blakestream-Installer/repos/lithium-0.15.2-update/share/pixmaps/nsis-wizard.bmp"
+!define MUI_UNWELCOMEFINISHPAGE_BITMAP "/home/sid/Blakestream-Installer/repos/lithium-0.15.21/share/pixmaps/nsis-wizard.bmp"
 !define MUI_UNFINISHPAGE_NOAUTOCLOSE
 
 # Included files
@@ -48,7 +48,7 @@ Var StartMenuGroup
 !insertmacro MUI_LANGUAGE English
 
 # Installer attributes
-OutFile /home/sid/Blakestream-Installer/repos/lithium-0.15.2-update/lithium-${VERSION}-win-setup.exe
+OutFile /home/sid/Blakestream-Installer/repos/lithium-0.15.21/lithium-${VERSION}-win-setup.exe
 !if "" == "64"
 InstallDir $PROGRAMFILES64\Bitcoin
 !else
@@ -73,14 +73,14 @@ ShowUninstDetails show
 Section -Main SEC0000
     SetOutPath $INSTDIR
     SetOverwrite on
-    File /home/sid/Blakestream-Installer/repos/lithium-0.15.2-update/release/lithium-qt
-    File /oname=COPYING.txt /home/sid/Blakestream-Installer/repos/lithium-0.15.2-update/COPYING
-    File /oname=readme.txt /home/sid/Blakestream-Installer/repos/lithium-0.15.2-update/doc/README_windows.txt
+    File /home/sid/Blakestream-Installer/repos/lithium-0.15.21/release/lithium-qt
+    File /oname=COPYING.txt /home/sid/Blakestream-Installer/repos/lithium-0.15.21/COPYING
+    File /oname=readme.txt /home/sid/Blakestream-Installer/repos/lithium-0.15.21/doc/README_windows.txt
     SetOutPath $INSTDIR\daemon
-    File /home/sid/Blakestream-Installer/repos/lithium-0.15.2-update/release/lithiumd
-    File /home/sid/Blakestream-Installer/repos/lithium-0.15.2-update/release/lithium-cli
+    File /home/sid/Blakestream-Installer/repos/lithium-0.15.21/release/lithiumd
+    File /home/sid/Blakestream-Installer/repos/lithium-0.15.21/release/lithium-cli
     SetOutPath $INSTDIR\doc
-    File /r /home/sid/Blakestream-Installer/repos/lithium-0.15.2-update/doc\*.*
+    File /r /home/sid/Blakestream-Installer/repos/lithium-0.15.21/doc\*.*
     SetOutPath $INSTDIR
     WriteRegStr HKCU "${REGKEY}\Components" Main 1
 SectionEnd

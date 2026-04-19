@@ -1,6 +1,6 @@
 # Lithium 0.15.2 Update — QC Report
 
-Fresh QC performed against source of truth `lithium-0.15.2-update.md` and the
+Fresh QC performed against source of truth `lithium-0.15.21.md` and the
 legacy 0.8.x Lithium source in `../lithium/src/`.
 
 ---
@@ -49,7 +49,7 @@ legacy 0.8.x Lithium source in `../lithium/src/`.
 ## Source-of-Truth Claim Verification
 
 Against the QC Status bullets and other prescriptive sections of
-`lithium-0.15.2-update.md`:
+`lithium-0.15.21.md`:
 
 | Claim                                                                                                 | Status |
 |-------------------------------------------------------------------------------------------------------|--------|

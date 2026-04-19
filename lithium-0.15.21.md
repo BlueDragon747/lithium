@@ -2,9 +2,9 @@
 
 ## Overview
 
-Port Lithium (LIT) from its current 0.8.9.7 codebase to Bitcoin Core 0.15.2, following the same approach used for the Blakecoin 0.15.2 update (`Blakecoin-0.15.2-update`).
+Port Lithium (LIT) from its current 0.8.9.7 codebase to Bitcoin Core 0.15.2, following the same approach used for the Blakecoin 0.15.2 update (`Blakecoin-0.15.21`).
 
-**Reference codebase:** `../Blakecoin-0.15.2-update/` — the completed Blakecoin port to 0.15.2
+**Reference codebase:** `../Blakecoin-0.15.21/` — the completed Blakecoin port to 0.15.2
 **Original codebase:** `../lithium/` — current 0.8.9.7 source with all coin-specific parameters
 
 ---
@@ -169,7 +169,7 @@ Note: These are IP addresses, not DNS hostnames. In 0.15.2, these should be adde
 
 ### Phase 1: Copy & Rebrand the Blakecoin 0.15.2 Base
 
-1. **Copy** the entire `Blakecoin-0.15.2-update` codebase into this directory
+1. **Copy** the entire `Blakecoin-0.15.21` codebase into this directory
 2. **Rename** all Blakecoin references → Lithium:
    - Binary names: `lithiumd`, `lithium-qt`, `lithium-cli`, `lithium-tx`
    - Config file: `lithium.conf`, config dir `~/.lithium/`
@@ -307,7 +307,7 @@ Note: Block time and retarget are identical to Blakecoin, which simplifies the p
 
 | What | Where |
 |------|-------|
-| Reference (completed) | `../Blakecoin-0.15.2-update/` |
+| Reference (completed) | `../Blakecoin-0.15.21/` |
 | Original coin source | `../lithium/` |
 | Original params | `../lithium/src/main.cpp`, `../lithium/src/main.h` |
 | Original build script | `../lithium/build.sh` |
