@@ -1,7 +1,9 @@
 src/*.exe
-src/bitcoin
-src/bitcoind
+src/lithium-cli
+src/lithium-tx
+src/lithiumd
 src/test_bitcoin
+src/qt/locale/*.ts
 .*.swp
 *.*~*
 *.bak
@@ -9,17 +11,20 @@ src/test_bitcoin
 *.orig
 *.o
 *.patch
-.bitcoin
+.lithium
+*.ts
+*.d.ts
+.ts
 
 # Compilation and Qt preprocessor part
 *.qm
 Makefile
-bitcoin-qt
-Bitcoin-Qt.app
+lithium-qt
+Lithium-Qt.app
 
 # Unit-tests
 Makefile.test
-bitcoin-qt_test
+lithium-qt_test
 
 # Resources cpp
 qrc_*.cpp
@@ -31,9 +36,12 @@ qrc_*.cpp
 .DS_Store
 build
 !src/leveldb*/Makefile
+!depends/Makefile
+!depends/patches/**
 
 # Build outputs (created by build.sh)
 outputs/
+.cache/bdb/
 
 # macOS SDK (Apple license — not redistributable)
 docker/sdk/*.sdk.tar.*
