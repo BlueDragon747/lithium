@@ -21,7 +21,7 @@
 #define CLIENT_VERSION_MINOR 15
 
 /* Build revision */
-#define CLIENT_VERSION_REVISION 2
+#define CLIENT_VERSION_REVISION 21
 
 /* Copyright holder(s) before %s replacement */
 #define COPYRIGHT_HOLDERS "The %s developers"
@@ -350,7 +350,7 @@
 #define PACKAGE_NAME "Lithium Core"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "Lithium Core 0.15.2"
+#define PACKAGE_STRING "Lithium Core 0.15.21"
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME "lithium"
@@ -359,7 +359,7 @@
 #define PACKAGE_URL "https://github.com/BlueDragon747/lithium"
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "0.15.2"
+#define PACKAGE_VERSION "0.15.21"
 
 /* Define to necessary symbol if this constant uses a non-standard name on
    your system. */

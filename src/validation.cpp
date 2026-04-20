@@ -2865,11 +2865,9 @@ static bool FindUndoPos(CValidationState &state, int nFile, CDiskBlockPos &pos, 
 static bool CheckBlockHeader(const CBlockHeader& block, CValidationState& state, const Consensus::Params& consensusParams, bool fCheckPOW = true)
 {
     uint256 blockHash = block.GetHash();
-    LogPrintf("DEBUG: CheckBlockHeader entered for %s (fCheckPOW=%s)\n", blockHash.ToString(), fCheckPOW ? "true" : "false");
     
     // BEGIN BLAKEBITCOIN: Skip PoW check for genesis block
     if (blockHash == consensusParams.hashGenesisBlock) {
-        LogPrintf("DEBUG: CheckBlockHeader skipping genesis block\n");
         return true;
     }
     
@@ -2878,15 +2876,11 @@ static bool CheckBlockHeader(const CBlockHeader& block, CValidationState& state,
     }
 
     if (fCheckPOW && !block.IsAuxpow()) {
-        LogPrintf("DEBUG: About to CheckProofOfWork for %s (nBits=%08x)\n", blockHash.ToString(), block.nBits);
         if (!CheckProofOfWork(blockHash, block.nBits, consensusParams)) {
-            LogPrintf("DEBUG: CheckProofOfWork FAILED for %s - high-hash error\n", blockHash.ToString());
             return state.DoS(50, false, REJECT_INVALID, "high-hash", false, "proof of work failed");
         }
-        LogPrintf("DEBUG: CheckProofOfWork PASSED for %s\n", blockHash.ToString());
     }
     
-    LogPrintf("DEBUG: CheckBlockHeader SUCCESS for %s\n", blockHash.ToString());
     return true;
 }
 
@@ -2894,18 +2888,14 @@ bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::P
 {
     // These are checks that are independent of context.
     uint256 blockHash = block.GetHash();
-    LogPrintf("DEBUG: CheckBlock entered for %s (fCheckPOW=%s)\n", blockHash.ToString(), fCheckPOW ? "true" : "false");
 
     if (block.fChecked) {
-        LogPrintf("DEBUG: CheckBlock returning true (already checked) for %s\n", blockHash.ToString());
         return true;
     }
 
     // Check that the header is valid (particularly PoW).  This is mostly
     // redundant with the call in AcceptBlockHeader.
-    LogPrintf("DEBUG: About to CheckBlockHeader for %s\n", blockHash.ToString());
     if (!CheckBlockHeader(block, state, consensusParams, fCheckPOW)) {
-        LogPrintf("DEBUG: CheckBlockHeader FAILED for %s: %s\n", blockHash.ToString(), FormatStateMessage(state));
         return false;
     }
 
@@ -2957,7 +2947,6 @@ bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::P
     if (fCheckPOW && fCheckMerkleRoot)
         block.fChecked = true;
 
-    LogPrintf("DEBUG: CheckBlock SUCCESS for %s\n", blockHash.ToString());
     return true;
 }
 
@@ -3045,10 +3034,6 @@ static bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationSta
     // Check proof of work
     unsigned int nCalculatedBits = GetNextWorkRequired(pindexPrev, &block, consensusParams);
     if (block.nBits != nCalculatedBits) {
-        LogPrintf("DEBUG: ContextualCheckBlockHeader DIFFBITS MISMATCH at height %d\n", nHeight);
-        LogPrintf("DEBUG:   Block nBits:    0x%08x\n", block.nBits);
-        LogPrintf("DEBUG:   Calculated:     0x%08x\n", nCalculatedBits);
-        LogPrintf("DEBUG:   pindexPrev height: %d, nBits: 0x%08x\n", pindexPrev->nHeight, pindexPrev->nBits);
         return state.DoS(100, false, REJECT_INVALID, "bad-diffbits", false, "incorrect proof of work");
     }
 
@@ -3253,7 +3238,6 @@ static bool AcceptBlock(const std::shared_ptr<const CBlock>& pblock, CValidation
 {
     const CBlock& block = *pblock;
     uint256 blockHash = block.GetHash();
-    LogPrintf("DEBUG: AcceptBlock entered for %s\n", blockHash.ToString());
 
     if (fNewBlock) *fNewBlock = false;
     AssertLockHeld(cs_main);
@@ -3262,7 +3246,6 @@ static bool AcceptBlock(const std::shared_ptr<const CBlock>& pblock, CValidation
     CBlockIndex *&pindex = ppindex ? *ppindex : pindexDummy;
 
     if (!AcceptBlockHeader(block, state, chainparams, &pindex)) {
-        LogPrintf("DEBUG: AcceptBlockHeader failed for %s: %s\n", blockHash.ToString(), FormatStateMessage(state));
         return false;
     }
 
@@ -3299,18 +3282,14 @@ static bool AcceptBlock(const std::shared_ptr<const CBlock>& pblock, CValidation
     }
     if (fNewBlock) *fNewBlock = true;
 
-    LogPrintf("DEBUG: About to CheckBlock for %s at height %d\n", blockHash.ToString(), pindex->nHeight);
     if (!CheckBlock(block, state, chainparams.GetConsensus())) {
-        LogPrintf("DEBUG: CheckBlock FAILED for %s: %s\n", blockHash.ToString(), FormatStateMessage(state));
         if (state.IsInvalid() && !state.CorruptionPossible()) {
             pindex->nStatus |= BLOCK_FAILED_VALID;
             setDirtyBlockIndex.insert(pindex);
         }
         return error("%s: %s", __func__, FormatStateMessage(state));
     }
-    LogPrintf("DEBUG: About to ContextualCheckBlock for %s at height %d\n", blockHash.ToString(), pindex->nHeight);
     if (!ContextualCheckBlock(block, state, chainparams.GetConsensus(), pindex->pprev)) {
-        LogPrintf("DEBUG: ContextualCheckBlock FAILED for %s: %s\n", blockHash.ToString(), FormatStateMessage(state));
         if (state.IsInvalid() && !state.CorruptionPossible()) {
             pindex->nStatus |= BLOCK_FAILED_VALID;
             setDirtyBlockIndex.insert(pindex);
@@ -3345,7 +3324,6 @@ static bool AcceptBlock(const std::shared_ptr<const CBlock>& pblock, CValidation
     if (fCheckForPruning)
         FlushStateToDisk(chainparams, state, FLUSH_STATE_NONE); // we just allocated more disk space for block files
 
-    LogPrintf("DEBUG: AcceptBlock SUCCESS for %s at height %d\n", blockHash.ToString(), pindex->nHeight);
     return true;
 }
 
@@ -4180,9 +4158,7 @@ bool LoadExternalBlockFile(const CChainParams& chainparams, FILE* fileIn, CDiskB
                 if (mapBlockIndex.count(hash) == 0 || (mapBlockIndex[hash]->nStatus & BLOCK_HAVE_DATA) == 0) {
                     LOCK(cs_main);
                     CValidationState state;
-                    LogPrintf("DEBUG: About to import block %s (height unknown yet)\n", hash.ToString());
                     bool fAccepted = AcceptBlock(pblock, state, chainparams, nullptr, true, dbp, nullptr);
-                    LogPrintf("DEBUG: AcceptBlock returned %s for %s\n", fAccepted ? "true" : "false", hash.ToString());
                     if (fAccepted)
                         nLoaded++;
                     if (state.IsError()) {
@@ -4193,10 +4169,6 @@ bool LoadExternalBlockFile(const CChainParams& chainparams, FILE* fileIn, CDiskB
                     }
                     if (!fAccepted) {
                         LogPrintf("ERROR: AcceptBlock returned false but no error state for %s\n", hash.ToString());
-                        LogPrintf("DEBUG: State valid=%s, invalid=%s, error=%s\n", 
-                                  state.IsValid() ? "yes" : "no",
-                                  state.IsInvalid() ? "yes" : "no",
-                                  state.IsError() ? "yes" : "no");
                         break;
                     }
                 } else if (hash != chainparams.GetConsensus().hashGenesisBlock && mapBlockIndex[hash]->nHeight % 1000 == 0) {

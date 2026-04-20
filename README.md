@@ -1,36 +1,37 @@
 <p align="center">
-  <img src="src/qt/res/icons/bitcoin.png" alt="Blakecoin" width="95">
+  <img src="src/qt/res/icons/bitcoin.png" alt="Lithium" width="95">
 </p>
 
-# Blakecoin 0.15.2
+# Lithium 0.15.21
 
-## About Blakecoin
+> SegWit signaling schedule: Lithium mainnet versionbits signaling starts on May 11, 2026 00:00:00 UTC (`1778457600`) and times out on May 11, 2027 00:00:00 UTC (`1809993600`). Activation still depends on BIP9 lock-in.
 
-Blakecoin is the original Blake-256 coin and parent chain for [Photon](https://github.com/BlueDragon747/photon), [BlakeBitcoin](https://github.com/BlakeBitcoin/BlakeBitcoin), [Electron](https://github.com/BlueDragon747/Electron-ELT), [Universal Molecule](https://github.com/BlueDragon747/universalmol), and [Lithium](https://github.com/BlueDragon747/lithium). It is a digital currency using peer-to-peer technology with no central authority.
+## About Lithium
+
+Lithium is a Blake-256 cryptocurrency in the BlakeStream family. This repository carries the Lithium Core `0.15.21` update and ships build/release packaging for native Ubuntu `20.04`, `22.04`, `24.04`, `25.10`, Windows, native macOS, and Ubuntu `22.04+` AppImage.
 
 - Uses the **Blake-256** hashing algorithm
 - Based on **Bitcoin Core 0.15.2**
 - Uses the autotools build system (`./configure` + `make`)
 - Ships release packages for Ubuntu 20.04, 22.04, 24.04, 25.10, Windows, macOS, and Ubuntu 22+ AppImage
-- Website: https://blakecoin.org
 
 | Network Info | |
 |---|---|
 | Algorithm | Blake-256 (8 rounds) |
-| Block time | 3 minutes |
-| Block reward | 50 BLC |
-| Difficulty retarget | Every 20 blocks |
-| Default port | 8773 |
-| RPC port | 8772 |
-| Max supply | 7,000,000,000 BLC |
+| Block time | 180 seconds (3 minutes) |
+| Block reward | Tiered legacy schedule: 0.48, 48, 24, 12, 6, 3, 1.5, and 1 LIT |
+| Difficulty retarget | Every 20 blocks (60 minutes) |
+| Default port | 12007 |
+| RPC port | 12000 |
+| Max supply | 25,228,800 LIT |
 
 ---
 
 ## Quick Start
 
 ```bash
-git clone https://github.com/BlueDragon747/Blakecoin.git
-cd Blakecoin
+git clone https://github.com/SidGrip/lithium.git
+cd lithium
 bash ./build.sh --help
 ```
 
@@ -103,7 +104,7 @@ bash ./build.sh --appimage --pull-docker
 
 - Uses `sidgrip/appimage-base:22.04`
 - Produces a self-contained AppImage in `outputs/AppImage/`
-- The output folder keeps `Blakecoin-0.15.2-x86_64.AppImage`, `README.md`, and `build-info.txt`
+- The output folder keeps `Lithium-0.15.21-x86_64.AppImage`, `README.md`, and `build-info.txt`
 - Intended for Ubuntu `22.04+`
 - Direct launch on Ubuntu `22.04.5` needs `sudo apt install libfuse2`
 - Direct launch on Ubuntu `24.04.4` and `25.10` needs `sudo apt install libfuse2t64`
@@ -129,7 +130,7 @@ There are two macOS paths in this repo:
 bash ./build.sh --macos --both --pull-docker
 ```
 
-- Runs on Linux with Docker using `sidgrip/osxcross-base:latest`
+- Runs on Linux with Docker using `sidgrip/osxcross-base:sdk-26.2`
 - Produces artifacts in `outputs/Macosx/`
 
 #### Native build on macOS
@@ -149,45 +150,45 @@ bash ./build.sh --native --both
 ```text
 outputs/
 ├── AppImage/
-│   ├── Blakecoin-0.15.2-x86_64.AppImage
+│   ├── Lithium-0.15.21-x86_64.AppImage
 │   ├── README.md
 │   └── build-info.txt
 ├── Macosx/
-│   ├── Blakecoin-Qt.app
-│   ├── blakecoin-cli-0.15.2
-│   ├── blakecoin-qt-0.15.2
-│   ├── blakecoin-tx-0.15.2
-│   ├── blakecoind-0.15.2
+│   ├── Lithium-Qt.app
+│   ├── lithium-cli-0.15.21
+│   ├── lithium-qt-0.15.21
+│   ├── lithium-tx-0.15.21
+│   ├── lithiumd-0.15.21
 │   └── build-info.txt
 ├── Ubuntu-20/
 │   ├── README.md
-│   ├── blakecoin-256.png
-│   ├── blakecoin-cli
-│   ├── blakecoin.conf
-│   ├── blakecoin.desktop
-│   ├── blakecoin-qt
-│   ├── blakecoin-qt-bin
-│   ├── blakecoin-tx
-│   ├── blakecoind
+│   ├── lithium-256.png
+│   ├── lithium-cli
+│   ├── lithium.conf
+│   ├── lithium.desktop
+│   ├── lithium-qt
+│   ├── lithium-qt-bin
+│   ├── lithium-tx
+│   ├── lithiumd
 │   └── install-deps.sh
 ├── Ubuntu-22/
 ├── Ubuntu-24/
 ├── Ubuntu-25/
 └── Windows/
-    ├── blakecoin-cli-0.15.2.exe
-    ├── blakecoin-qt-0.15.2.exe
-    ├── blakecoin-tx-0.15.2.exe
-    ├── blakecoind-0.15.2.exe
+    ├── lithium-cli-0.15.21.exe
+    ├── lithium-qt-0.15.21.exe
+    ├── lithium-tx-0.15.21.exe
+    ├── lithiumd-0.15.21.exe
     └── build-info.txt
 ```
 
-For Ubuntu native builds, the current host's final wallet files land in `outputs/Ubuntu-20/`, `outputs/Ubuntu-22/`, `outputs/Ubuntu-24/`, or `outputs/Ubuntu-25/` depending on the detected Ubuntu release. These are bare Ubuntu-native binaries, so each Ubuntu folder gets its own `install-deps.sh`, `README.md`, and `blakecoin.conf`. Berkeley DB `4.8.30.NC` is bootstrapped into a local repo cache by the builder rather than being installed from apt.
+For Ubuntu native builds, the current host's final wallet files land in `outputs/Ubuntu-20/`, `outputs/Ubuntu-22/`, `outputs/Ubuntu-24/`, or `outputs/Ubuntu-25/` depending on the detected Ubuntu release. These are bare Ubuntu-native binaries, so each Ubuntu folder gets its own `install-deps.sh`, `README.md`, and `lithium.conf`. Berkeley DB `4.8.30.NC` is bootstrapped into a local repo cache by the builder rather than being installed from apt.
 
-For Windows cross-builds from Linux, the output bundle lands in `outputs/Windows/`, using `.exe` binaries plus bundled `.dll` files, `qt.conf`, `platforms/qwindows.dll`, and `build-info.txt`.
+For Windows cross-builds from Linux, the output bundle lands in `outputs/Windows/` and contains the four `.exe` binaries plus `build-info.txt`.
 
-For native macOS builds, the current host's daemon tools, `Blakecoin-Qt.app`, and the raw `blakecoin-qt-0.15.2` binary all land in `outputs/Macosx/`.
+For native macOS builds, the current host's daemon tools, `Lithium-Qt.app`, and the raw `lithium-qt-0.15.21` binary all land in `outputs/Macosx/`.
 
-For AppImage builds, `outputs/AppImage/` keeps `Blakecoin-0.15.2-x86_64.AppImage`, `README.md`, and `build-info.txt`.
+For AppImage builds, `outputs/AppImage/` keeps `Lithium-0.15.21-x86_64.AppImage`, `README.md`, and `build-info.txt`.
 
 ---
 
@@ -200,16 +201,17 @@ When using `--pull-docker`, the build script uses these prebuilt images:
 | `sidgrip/native-base:20.04` | Native Linux Ubuntu 20.04 build |
 | `sidgrip/native-base:22.04` | Native Linux Ubuntu 22.04 build |
 | `sidgrip/native-base:24.04` | Native Linux Ubuntu 24.04 build |
+| `sidgrip/native-base:25.10` | Native Linux Ubuntu 25.10 build |
 | `sidgrip/appimage-base:22.04` | Ubuntu 22+ AppImage build |
 | `sidgrip/mxe-base:latest` | Windows cross-compile |
-| `sidgrip/osxcross-base:latest` | macOS cross-compile |
+| `sidgrip/osxcross-base:sdk-26.2` | macOS cross-compile |
 
 ---
 
 ## Multi-Coin Builder
 
-For building wallets for all Blake-family coins [Blakecoin](https://github.com/BlueDragon747/Blakecoin), [Photon](https://github.com/BlueDragon747/photon), [BlakeBitcoin](https://github.com/BlakeBitcoin/BlakeBitcoin), [Electron](https://github.com/BlueDragon747/Electron-ELT), [Universal Molecule](https://github.com/BlueDragon747/universalmol), and [Lithium](https://github.com/BlueDragon747/lithium), see the [Blakestream Installer](https://github.com/SidGrip/Blakestream-Installer).
+For building wallets for all Blake-family coins [Blakecoin](https://github.com/SidGrip/Blakecoin), [Photon](https://github.com/SidGrip/photon), [BlakeBitcoin](https://github.com/SidGrip/BlakeBitcoin), [Electron-ELT](https://github.com/SidGrip/Electron-ELT), [UniversalMolecule](https://github.com/SidGrip/universalmol), and [Lithium](https://github.com/SidGrip/lithium), see the [Blakestream Installer](https://github.com/SidGrip/Blakestream-Installer).
 
 ## License
 
-Blakecoin is released under the terms of the MIT license. See `COPYING` for more information.
+Lithium is released under the terms of the MIT license. See `COPYING` for more information.

@@ -5,7 +5,7 @@ SetCompressor /SOLID lzma
 
 # General Symbol Definitions
 !define REGKEY "SOFTWARE\$(^Name)"
-!define VERSION 0.15.2
+!define VERSION 0.15.21
 !define COMPANY "Lithium Core project"
 !define URL https://github.com/BlueDragon747/lithium
 
