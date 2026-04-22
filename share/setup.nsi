@@ -10,7 +10,7 @@ SetCompressor /SOLID lzma
 !define URL https://github.com/BlueDragon747/lithium
 
 # MUI Symbol Definitions
-!define MUI_ICON "/home/sid/Blakestream-Installer/repos/lithium-0.15.21/share/pixmaps/Blakecoin.ico"
+!define MUI_ICON "/home/sid/Blakestream-Installer/repos/lithium-0.15.21/share/pixmaps/bitcoin.ico"
 !define MUI_WELCOMEFINISHPAGE_BITMAP "/home/sid/Blakestream-Installer/repos/lithium-0.15.21/share/pixmaps/nsis-wizard.bmp"
 !define MUI_HEADERIMAGE
 !define MUI_HEADERIMAGE_RIGHT
@@ -104,7 +104,7 @@ Section -post SEC0001
     WriteRegDWORD HKCU "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\$(^Name)" NoModify 1
     WriteRegDWORD HKCU "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\$(^Name)" NoRepair 1
     WriteRegStr HKCR "lithium" "URL Protocol" ""
-    WriteRegStr HKCR "lithium" "" "URL:Bitcoin"
+    WriteRegStr HKCR "lithium" "" "URL:Lithium"
     WriteRegStr HKCR "lithium\DefaultIcon" "" $INSTDIR\lithium-qt
     WriteRegStr HKCR "lithium\shell\open\command" "" '"$INSTDIR\lithium-qt" "%1"'
 SectionEnd
