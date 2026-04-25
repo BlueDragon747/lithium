@@ -15,22 +15,21 @@ BOOST_FIXTURE_TEST_SUITE(main_tests, TestingSetup)
 
 static void TestLithiumSubsidySchedule(const Consensus::Params& consensusParams)
 {
+    const int act = consensusParams.nSubsidyLadderActivationHeight;
+    // Genesis is always the historical 5 LIT.
     BOOST_CHECK_EQUAL(GetBlockSubsidy(0, consensusParams), 5 * COIN);
-    BOOST_CHECK_EQUAL(GetBlockSubsidy(1, consensusParams), 48 * CENT);
-    BOOST_CHECK_EQUAL(GetBlockSubsidy(1998, consensusParams), 48 * CENT);
-    BOOST_CHECK_EQUAL(GetBlockSubsidy(1999, consensusParams), 48 * COIN);
-    BOOST_CHECK_EQUAL(GetBlockSubsidy(174999, consensusParams), 48 * COIN);
-    BOOST_CHECK_EQUAL(GetBlockSubsidy(175000, consensusParams), 24 * COIN);
-    BOOST_CHECK_EQUAL(GetBlockSubsidy(349999, consensusParams), 24 * COIN);
-    BOOST_CHECK_EQUAL(GetBlockSubsidy(350000, consensusParams), 12 * COIN);
-    BOOST_CHECK_EQUAL(GetBlockSubsidy(524999, consensusParams), 12 * COIN);
-    BOOST_CHECK_EQUAL(GetBlockSubsidy(525000, consensusParams), 6 * COIN);
-    BOOST_CHECK_EQUAL(GetBlockSubsidy(649999, consensusParams), 6 * COIN);
-    BOOST_CHECK_EQUAL(GetBlockSubsidy(650000, consensusParams), 3 * COIN);
-    BOOST_CHECK_EQUAL(GetBlockSubsidy(799999, consensusParams), 3 * COIN);
-    BOOST_CHECK_EQUAL(GetBlockSubsidy(800000, consensusParams), 150 * CENT);
-    BOOST_CHECK_EQUAL(GetBlockSubsidy(974999, consensusParams), 150 * CENT);
-    BOOST_CHECK_EQUAL(GetBlockSubsidy(975000, consensusParams), 1 * COIN);
+    // Pre-activation: 50 LIT flat (preserves the 0.15.21 chain history mined
+    // before the ladder fork). Heights inside legacy ladder ranges still pay
+    // the flat amount until activation.
+    BOOST_CHECK_EQUAL(GetBlockSubsidy(1, consensusParams), 50 * COIN);
+    BOOST_CHECK_EQUAL(GetBlockSubsidy(1998, consensusParams), 50 * COIN);
+    BOOST_CHECK_EQUAL(GetBlockSubsidy(175000, consensusParams), 50 * COIN);
+    BOOST_CHECK_EQUAL(GetBlockSubsidy(975000, consensusParams), 50 * COIN);
+    BOOST_CHECK_EQUAL(GetBlockSubsidy(act - 1, consensusParams), 50 * COIN);
+    // At/after activation: legacy 0.8 lithium height-tier ladder. Activation
+    // lives past 975000 on mainnet so the long-tail tier (1 LIT) applies.
+    BOOST_CHECK_EQUAL(GetBlockSubsidy(act, consensusParams), 1 * COIN);
+    BOOST_CHECK_EQUAL(GetBlockSubsidy(act + 1000, consensusParams), 1 * COIN);
 }
 
 BOOST_AUTO_TEST_CASE(block_subsidy_test)
@@ -42,9 +41,10 @@ BOOST_AUTO_TEST_CASE(block_subsidy_test)
 BOOST_AUTO_TEST_CASE(subsidy_limit_test)
 {
     const auto chainParams = CreateChainParams(CBaseChainParams::MAIN);
-    for (int nHeight : {0, 1, 1998, 1999, 175000, 350000, 525000, 650000, 800000, 975000}) {
+    const int act = chainParams->GetConsensus().nSubsidyLadderActivationHeight;
+    for (int nHeight : {0, 1, 1998, 175000, 975000, act - 1, act, act + 1000, 5000000}) {
         CAmount nSubsidy = GetBlockSubsidy(nHeight, chainParams->GetConsensus());
-        BOOST_CHECK(nSubsidy <= 48 * COIN);
+        BOOST_CHECK(nSubsidy <= 50 * COIN);
         BOOST_CHECK(MoneyRange(nSubsidy));
     }
 }

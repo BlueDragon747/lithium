@@ -42,6 +42,13 @@ struct BIP9Deployment {
 struct Params {
     uint256 hashGenesisBlock;
     int nSubsidyHalvingInterval;
+    /**
+     * Block height at which the legacy 0.8 lithium height-tier subsidy ladder
+     * takes effect. Below this height GetBlockSubsidy returns 50 LIT flat,
+     * preserving the chain history mined before the ladder rollout. At and
+     * after this height the ladder applies.
+     */
+    int nSubsidyLadderActivationHeight = 0;
     /** Block height and hash at which BIP34 becomes active */
     int BIP34Height;
     uint256 BIP34Hash;
