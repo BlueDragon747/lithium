@@ -1,6 +1,6 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
 // Copyright (c) 2009-2016 The Bitcoin Core developers
-// Copyright (c) 2013-2026 The BlakeBitcoin Developers
+// Copyright (c) 2013-2026 The Lithium Developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -58,7 +58,7 @@
 using namespace boost::placeholders;
 
 #if defined(NDEBUG)
-# error "BlakeBitcoin cannot be compiled without assertions."
+# error "Lithium cannot be compiled without assertions."
 #endif
 
 /**
@@ -101,7 +101,7 @@ static void CheckBlockIndex(const Consensus::Params& consensusParams);
 /** Constant stuff for coinbase transactions we create: */
 CScript COINBASE_FLAGS;
 
-const std::string strMessageMagic = "BlakeBitcoin Signed Message:\n";
+const std::string strMessageMagic = "Lithium Signed Message:\n";
 
 // Internal stuff
 namespace {
@@ -1091,15 +1091,22 @@ bool ReadBlockFromDisk(CBlock& block, const CBlockIndex* pindex, const Consensus
 
 CAmount GetBlockSubsidy(int nHeight, const Consensus::Params& consensusParams)
 {
-    int halvings = nHeight / consensusParams.nSubsidyHalvingInterval;
-    // Force block reward to zero when right shift is undefined.
-    if (halvings >= 64)
-        return 0;
+    // Pre-activation: preserve the 50 LIT flat payout that the 0.15.21 chain
+    // mined before the ladder fork. Genesis stays at the historical 5 LIT.
+    if (nHeight == 0)
+        return 5 * COIN;
+    if (nHeight < consensusParams.nSubsidyLadderActivationHeight)
+        return 50 * COIN;
 
-    CAmount nSubsidy = 50 * COIN;
-    // BlakeBitcoin uses the standard Bitcoin-style halving cadence every 210,000 blocks.
-    nSubsidy >>= halvings;
-    return nSubsidy;
+    // At/after activation: legacy 0.8 lithium height-tier ladder.
+    if (nHeight < 1999)      return 48 * CENT;
+    if (nHeight < 175000)    return 48 * COIN;
+    if (nHeight < 350000)    return 24 * COIN;
+    if (nHeight < 525000)    return 12 * COIN;
+    if (nHeight < 650000)    return 6 * COIN;
+    if (nHeight < 800000)    return 3 * COIN;
+    if (nHeight < 975000)    return 150 * CENT;
+    return 1 * COIN;
 }
 
 bool IsInitialBlockDownload()
@@ -1774,7 +1781,7 @@ static bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockInd
     // See BIP30 and http://r6.ca/blog/20120206T005236Z.html for more information.
     // This logic is not necessary for memory pool transactions, as AcceptToMemoryPool
     // already refuses previously-known transaction ids entirely.
-    // BlakeBitcoin's legacy 0.8 chain intentionally only enforced the BIP30
+    // Lithium's legacy 0.8 chain intentionally only enforced the BIP30
     // overwrite check for CreateNewBlock-style contexts (where pindex has no
     // hash yet). Historical mainnet data hits a duplicate-txid overwrite at
     // height 256205; broad Bitcoin-style BIP30 enforcement causes IBD to stop
@@ -3023,7 +3030,7 @@ static bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationSta
     const Consensus::Params& consensusParams = params.GetConsensus();
     const bool fAuxPowActive = nHeight >= consensusParams.nAuxpowStartHeight;
 
-    // BlakeBitcoin's historical chain carries AuxPoW data before the nominal
+    // Lithium's historical chain carries AuxPoW data before the nominal
     // activation height. The legacy 0.8.x code accepted those early blocks
     // without rejecting them here, so preserve that compatibility path for
     // bootstrap import and main-chain validation.
