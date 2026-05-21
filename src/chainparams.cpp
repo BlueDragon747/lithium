@@ -1,394 +1,121 @@
 // Copyright (c) 2010 Satoshi Nakamoto
-// Copyright (c) 2009-2016 The Bitcoin Core developers
-// Copyright (c) 2013-2026 The Blakecoin Developers
+// Copyright (c) 2009-2022 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include "chainparams.h"
-#include "consensus/merkle.h"
+#include <chainparams.h>
 
-#include "tinyformat.h"
-#include "util.h"
-#include "utilstrencodings.h"
+#include <chainparamsseeds.h>
+#include <consensus/merkle.h>
+#include <deploymentinfo.h>
+#include <hash.h> // for signet block challenge hash
+#include <script/interpreter.h>
+#include <util/string.h>
+#include <util/system.h>
 
 #include <assert.h>
-#include <limits>
 
-#include "chainparamsseeds.h"
-
-static CBlock CreateGenesisBlock(const char* pszTimestamp, const CScript& genesisOutputScript, uint32_t nTime, uint32_t nNonce, uint32_t nBits, int32_t nVersion, const CAmount& genesisReward)
+void ReadSigNetArgs(const ArgsManager& args, CChainParams::SigNetOptions& options)
 {
-    CMutableTransaction txNew;
-    txNew.nVersion = 1;
-    txNew.vin.resize(1);
-    txNew.vout.resize(1);
-    txNew.vin[0].scriptSig = CScript() << 486604799 << CScriptNum(4) << std::vector<unsigned char>((const unsigned char*)pszTimestamp, (const unsigned char*)pszTimestamp + strlen(pszTimestamp));
-    txNew.vout[0].nValue = genesisReward;
-    txNew.vout[0].scriptPubKey = genesisOutputScript;
-
-    CBlock genesis;
-    genesis.nTime    = nTime;
-    genesis.nBits    = nBits;
-    genesis.nNonce   = nNonce;
-    genesis.nVersion = nVersion;
-    genesis.vtx.push_back(MakeTransactionRef(std::move(txNew)));
-    genesis.hashPrevBlock.SetNull();
-    genesis.hashMerkleRoot = BlockMerkleRoot(genesis);
-    return genesis;
+    if (args.IsArgSet("-signetseednode")) {
+        options.seeds.emplace(args.GetArgs("-signetseednode"));
+    }
+    if (args.IsArgSet("-signetchallenge")) {
+        const auto signet_challenge = args.GetArgs("-signetchallenge");
+        if (signet_challenge.size() != 1) {
+            throw std::runtime_error(strprintf("%s: -signetchallenge cannot be multiple values.", __func__));
+        }
+        options.challenge.emplace(ParseHex(signet_challenge[0]));
+    }
 }
 
-/**
- * Build the genesis block. Note that the output of its generation
- * transaction cannot be spent since it did not originally exist in the
- * database.
- *
- * Lithium legacy genesis block (inherited from 0.8 main.cpp).
- */
-static CBlock CreateGenesisBlock(uint32_t nTime, uint32_t nNonce, uint32_t nBits, int32_t nVersion, const CAmount& genesisReward)
+void ReadRegTestArgs(const ArgsManager& args, CChainParams::RegTestOptions& options)
 {
-    // Lithium legacy genesis block parameters.
-    const char* pszTimestamp = "London Times 9/27/14 3:20 utc Tornados armed and ready to strike Isis";
-    const CScript genesisOutputScript = CScript() << ParseHex("04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f") << OP_CHECKSIG;
-    return CreateGenesisBlock(pszTimestamp, genesisOutputScript, nTime, nNonce, nBits, nVersion, genesisReward);
+    if (auto value = args.GetBoolArg("-fastprune")) options.fastprune = *value;
+
+    for (const std::string& arg : args.GetArgs("-testactivationheight")) {
+        const auto found{arg.find('@')};
+        if (found == std::string::npos) {
+            throw std::runtime_error(strprintf("Invalid format (%s) for -testactivationheight=name@height.", arg));
+        }
+
+        const auto value{arg.substr(found + 1)};
+        int32_t height;
+        if (!ParseInt32(value, &height) || height < 0 || height >= std::numeric_limits<int>::max()) {
+            throw std::runtime_error(strprintf("Invalid height value (%s) for -testactivationheight=name@height.", arg));
+        }
+
+        const auto deployment_name{arg.substr(0, found)};
+        if (const auto buried_deployment = GetBuriedDeployment(deployment_name)) {
+            options.activation_heights[*buried_deployment] = height;
+        } else {
+            throw std::runtime_error(strprintf("Invalid name (%s) for -testactivationheight=name@height.", arg));
+        }
+    }
+
+    if (!args.IsArgSet("-vbparams")) return;
+
+    for (const std::string& strDeployment : args.GetArgs("-vbparams")) {
+        std::vector<std::string> vDeploymentParams = SplitString(strDeployment, ':');
+        if (vDeploymentParams.size() < 3 || 4 < vDeploymentParams.size()) {
+            throw std::runtime_error("Version bits parameters malformed, expecting deployment:start:end[:min_activation_height]");
+        }
+        CChainParams::VersionBitsParameters vbparams{};
+        if (!ParseInt64(vDeploymentParams[1], &vbparams.start_time)) {
+            throw std::runtime_error(strprintf("Invalid nStartTime (%s)", vDeploymentParams[1]));
+        }
+        if (!ParseInt64(vDeploymentParams[2], &vbparams.timeout)) {
+            throw std::runtime_error(strprintf("Invalid nTimeout (%s)", vDeploymentParams[2]));
+        }
+        if (vDeploymentParams.size() >= 4) {
+            if (!ParseInt32(vDeploymentParams[3], &vbparams.min_activation_height)) {
+                throw std::runtime_error(strprintf("Invalid min_activation_height (%s)", vDeploymentParams[3]));
+            }
+        } else {
+            vbparams.min_activation_height = 0;
+        }
+        bool found = false;
+        for (int j=0; j < (int)Consensus::MAX_VERSION_BITS_DEPLOYMENTS; ++j) {
+            if (vDeploymentParams[0] == VersionBitsDeploymentInfo[j].name) {
+                options.version_bits_parameters[Consensus::DeploymentPos(j)] = vbparams;
+                found = true;
+                LogPrintf("Setting version bits activation parameters for %s to start=%ld, timeout=%ld, min_activation_height=%d\n", vDeploymentParams[0], vbparams.start_time, vbparams.timeout, vbparams.min_activation_height);
+                break;
+            }
+        }
+        if (!found) {
+            throw std::runtime_error(strprintf("Invalid deployment (%s)", vDeploymentParams[0]));
+        }
+    }
 }
 
-void CChainParams::UpdateVersionBitsParameters(Consensus::DeploymentPos d, int64_t nStartTime, int64_t nTimeout)
-{
-    consensus.vDeployments[d].nStartTime = nStartTime;
-    consensus.vDeployments[d].nTimeout = nTimeout;
-}
-
-/**
- * Main network
- */
-/**
- * What makes a good checkpoint block?
- * + Is surrounded by blocks with reasonable timestamps
- *   (no blocks before with a timestamp after, none after with
- *    timestamp before)
- * + Contains no strange transactions
- */
-
-class CMainParams : public CChainParams {
-public:
-    CMainParams() {
-        strNetworkID = "main";
-        // Lithium uses a height-tier subsidy ladder (see validation.cpp::GetBlockSubsidy).
-        // Halving interval is unused.
-        consensus.nSubsidyHalvingInterval = std::numeric_limits<int>::max(); // No halving
-        // Forward-activate the legacy 0.8 ladder at this height. Below it the
-        // 0.15.21 chain pays 50 LIT flat (preserving recently-mined history);
-        // at and after it the legacy ladder applies (long-tail tier = 1 LIT).
-        // Set tip + 250 blocks (~12.5h at 180s spacing) past tip 1,949,226 to
-        // give miners and operators an upgrade window before the cliff.
-        consensus.nSubsidyLadderActivationHeight = 1949476;
-        // Lithium disables BIP34/65/66 version checks for historical compatibility.
-        consensus.BIP34Height = 100000000; // Disabled - far in future
-        consensus.BIP34Hash = uint256();
-        consensus.BIP65Height = 100000000; // Disabled - far in future
-        consensus.BIP66Height = 100000000; // Disabled - far in future
-        // Proof of work limit: compact 0x1e00ffff (matches legacy 0.8 ~uint256(0) >> 24).
-        consensus.powLimit = uint256S("000000ffff000000000000000000000000000000000000000000000000000000");
-        // Difficulty adjustment: every 20 blocks (1 hour with 3-minute blocks).
-        consensus.nPowTargetTimespan = 20 * 3 * 60;       // 1 hour
-        consensus.nPowTargetSpacing = 3 * 60;             // 3 minutes
-        consensus.fPowAllowMinDifficultyBlocks = false;
-        consensus.fPowNoRetargeting = false;
-        consensus.fStrictChainId = true;
-        consensus.nAuxpowChainId = 0x0006;
-        // Preserve the legacy nominal AuxPow activation height from the 0.8.x
-        // Lithium tree. Historical sync compatibility is handled in
-        // validation.cpp by accepting pre-start AuxPow-bearing blocks, matching
-        // legacy behavior during bootstrap import and IBD.
-        consensus.nAuxpowStartHeight = 160000;
-        // BEGIN BLAKECOIN: Rule change threshold for 20-block interval
-        consensus.nRuleChangeActivationThreshold = 19; // 95% of 20
-        consensus.nMinerConfirmationWindow = 20; // nPowTargetTimespan / nPowTargetSpacing
-        // END BLAKECOIN
-        consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].bit = 28;
-        consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].nStartTime = 1199145601; // January 1, 2008
-        consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].nTimeout = 1230767999; // December 31, 2008
-
-        // Deployment of BIP68, BIP112, and BIP113.
-        consensus.vDeployments[Consensus::DEPLOYMENT_CSV].bit = 0;
-        consensus.vDeployments[Consensus::DEPLOYMENT_CSV].nStartTime = Consensus::BIP9Deployment::ALWAYS_ACTIVE;
-        consensus.vDeployments[Consensus::DEPLOYMENT_CSV].nTimeout = Consensus::BIP9Deployment::NO_TIMEOUT;
-
-        // Mainnet SegWit signaling starts on May 11, 2026 00:00:00 UTC and
-        // times out on May 11, 2027 00:00:00 UTC.
-        consensus.vDeployments[Consensus::DEPLOYMENT_SEGWIT].bit = 1;
-        consensus.vDeployments[Consensus::DEPLOYMENT_SEGWIT].nStartTime = 1778457600;
-        consensus.vDeployments[Consensus::DEPLOYMENT_SEGWIT].nTimeout = 1809993600;
-
-        // The best chain should have at least this much work.
-        consensus.nMinimumChainWork = uint256S("0x0000000000000000000000000000000000000000000000000000000000000000");
-
-        // By default assume that the signatures in ancestors of this block are valid.
-        consensus.defaultAssumeValid = uint256S("0x0000000000000000000000000000000000000000000000000000000000000000");
-
-        /**
-         * The message start string is designed to be unlikely to occur in normal data.
-         * The characters are rarely used upper ASCII, not valid as UTF-8, and produce
-         * a large 32-bit integer with any alignment.
-         */
-        // Lithium mainnet message start bytes (from legacy source main.cpp:3193)
-        pchMessageStart[0] = 0xf4;
-        pchMessageStart[1] = 0xa3;
-        pchMessageStart[2] = 0x29;
-        pchMessageStart[3] = 0xd5;
-        nDefaultPort = 12007;
-        nPruneAfterHeight = 100000;
-
-        // Lithium legacy genesis block.
-        genesis = CreateGenesisBlock(1411788333, 8298496, 503382015, 112, 5 * COIN);
-        consensus.hashGenesisBlock = uint256S("0x000000fcf39055b547e94e610f1008b8046f942bbb730e8b6dfa6232931902db");
-        assert(genesis.hashMerkleRoot == uint256S("0x2a1fd3e405c93b2011b4189e97cd658b1f5ca859eba01723af28dd21f4d6c008"));
-
-        // BlakeStream ecosystem DNS seeds — shared across all 6 coins
-        vSeeds.emplace_back("blakestream.io", "seed.blakestream.io", false);
-        vSeeds.emplace_back("blakecoin.org", "seed.blakecoin.org", false);
-
-        // Lithium address prefixes from the legacy source.
-        base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,19);
-        base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,7);
-        base58Prefixes[SECRET_KEY] =     std::vector<unsigned char>(1,128);
-        base58Prefixes[EXT_PUBLIC_KEY] = {0x04, 0x88, 0xB2, 0x1E};
-        base58Prefixes[EXT_SECRET_KEY] = {0x04, 0x88, 0xAD, 0xE4};
-        bech32_hrp = "lit";
-
-        vFixedSeeds = std::vector<SeedSpec6>(pnSeed6_main, pnSeed6_main + ARRAYLEN(pnSeed6_main));
-
-        fMiningRequiresPeers = true;
-        fDefaultConsistencyChecks = false;
-        fRequireStandard = true;
-        fMineBlocksOnDemand = false;
-
-        // Lithium mainnet checkpoints (from lithium/src/checkpoints.cpp)
-        checkpointData = (CCheckpointData) {
-            {
-                {0,       uint256S("0x000000fcf39055b547e94e610f1008b8046f942bbb730e8b6dfa6232931902db")},
-                {13000,   uint256S("0x09f2b9ccb8024bb4eaf3d230945333d2b9418bbb0602d6de8d0f81cc5035136f")},
-                {19021,   uint256S("0x050190c7720c393171514350353ec7ac070bf721e79f053e521e0ea64b223d91")},
-                {26012,   uint256S("0x0384667174cf11623d727993781681f7d47e94a99d85c410d425c2522ba2d928")},
-                {30019,   uint256S("0x0b3c9b8156ecb23c0a851ceea23b5b635ea460c04bb6f86dfe40b5a7e524d242")},
-                {84000,   uint256S("0x000b1002ef5d01182a42f341e1f2838dddb123b3ef5693476d882c123ee804cf")},
-                {118009,  uint256S("0x75fd64c358f384ef700c1831209e3dc830a5cd9cd8a3ab7694897f950967dc20")},
-                {139452,  uint256S("0x56d154ab3ddf6968c529e0a880af0caa438579fa20f30dcaa260802df830b7de")},
-                {535001,  uint256S("0x34f47f7dc07805535442a7a765f9cf36baae1de657212d57e5e3ae6696eaaf7e")},
-                {1250000, uint256S("0xbdd59175ea75a7a6b99d93678a74c24a0f61ffe8ebde02b8cc1665e5a3eb9e79")},
-            }
-        };
-
-        chainTxData = ChainTxData{
-            // Data as of block 1250000 (last checkpoint, from lithium/src/checkpoints.cpp)
-            1646262870, // * UNIX timestamp of last checkpoint block
-            1628063,    // * total number of transactions between genesis and last checkpoint
-            2800.0 / (24 * 60 * 60) // * ~2800 tx/day expressed as tx/sec
-        };
-    }
-};
-
-/**
- * Testnet (v3)
- */
-class CTestNetParams : public CChainParams {
-public:
-    CTestNetParams() {
-        strNetworkID = "test";
-        // Keep testnet aligned with Blakecoin mainnet instead of inherited Bitcoin defaults.
-        consensus.nSubsidyHalvingInterval = std::numeric_limits<int>::max(); // No halving
-        consensus.BIP34Height = 100000000; // Disabled - far in future
-        consensus.BIP34Hash = uint256();
-        consensus.BIP65Height = 100000000; // Disabled - far in future
-        consensus.BIP66Height = 100000000; // Disabled - far in future
-        consensus.powLimit = uint256S("000000ffff000000000000000000000000000000000000000000000000000000");
-        consensus.nPowTargetTimespan = 20 * 3 * 60; // 1 hour (20 blocks * 3 minutes)
-        consensus.nPowTargetSpacing = 3 * 60;             // 3 minutes (Blakecoin)
-        consensus.fPowAllowMinDifficultyBlocks = true;
-        consensus.fPowNoRetargeting = false;
-        consensus.fStrictChainId = false;
-        consensus.nAuxpowChainId = 0x0006;
-        consensus.nAuxpowStartHeight = 0;
-        consensus.nRuleChangeActivationThreshold = 15; // 75% of 20
-        consensus.nMinerConfirmationWindow = 20;
-        consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].bit = 28;
-        consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].nStartTime = 1199145601; // January 1, 2008
-        consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].nTimeout = 1230767999; // December 31, 2008
-
-        // Deployment of BIP68, BIP112, and BIP113.
-        consensus.vDeployments[Consensus::DEPLOYMENT_CSV].bit = 0;
-        consensus.vDeployments[Consensus::DEPLOYMENT_CSV].nStartTime = Consensus::BIP9Deployment::ALWAYS_ACTIVE;
-        consensus.vDeployments[Consensus::DEPLOYMENT_CSV].nTimeout = Consensus::BIP9Deployment::NO_TIMEOUT;
-
-        // Deployment of SegWit (BIP141, BIP143, and BIP147)
-        consensus.vDeployments[Consensus::DEPLOYMENT_SEGWIT].bit = 1;
-        consensus.vDeployments[Consensus::DEPLOYMENT_SEGWIT].nStartTime = Consensus::BIP9Deployment::ALWAYS_ACTIVE;
-        consensus.vDeployments[Consensus::DEPLOYMENT_SEGWIT].nTimeout = Consensus::BIP9Deployment::NO_TIMEOUT;
-
-        // The best chain should have at least this much work.
-        consensus.nMinimumChainWork = uint256S("0x0000000000000000000000000000000000000000000000000000000000000000");
-
-        // By default assume that the signatures in ancestors of this block are valid.
-        consensus.defaultAssumeValid = uint256S("0x0000000000000000000000000000000000000000000000000000000000000000");
-
-        // Lithium testnet message start bytes (from legacy source main.cpp:2863-2866)
-        pchMessageStart[0] = 0x0d;
-        pchMessageStart[1] = 0x15;
-        pchMessageStart[2] = 0x04;
-        pchMessageStart[3] = 0x0c;
-        nDefaultPort = 12000;
-        nPruneAfterHeight = 1000;
-
-        // Legacy Lithium source reused the same genesis on testnet.
-        genesis = CreateGenesisBlock(1411788333, 8298496, 503382015, 112, 5 * COIN);
-        consensus.hashGenesisBlock = uint256S("0x000000fcf39055b547e94e610f1008b8046f942bbb730e8b6dfa6232931902db");
-        assert(genesis.hashMerkleRoot == uint256S("0x2a1fd3e405c93b2011b4189e97cd658b1f5ca859eba01723af28dd21f4d6c008"));
-
-        vFixedSeeds.clear();
-        vSeeds.clear();
-        // Testnet seeds to be added when available
-
-        // Lithium testnet address prefixes from the legacy source.
-        base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,142);
-        base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,170);
-        base58Prefixes[SECRET_KEY] =     std::vector<unsigned char>(1,239);
-        base58Prefixes[EXT_PUBLIC_KEY] = {0x04, 0x35, 0x87, 0xCF};
-        base58Prefixes[EXT_SECRET_KEY] = {0x04, 0x35, 0x83, 0x94};
-        bech32_hrp = "tlit";
-
-        vFixedSeeds = std::vector<SeedSpec6>(pnSeed6_test, pnSeed6_test + ARRAYLEN(pnSeed6_test));
-
-        fMiningRequiresPeers = true;
-        fDefaultConsistencyChecks = false;
-        fRequireStandard = false;
-        fMineBlocksOnDemand = false;
-
-        // BEGIN BLAKECOIN: Testnet checkpoints
-        checkpointData = (CCheckpointData) {
-            {
-                {0, uint256S("0x000000fcf39055b547e94e610f1008b8046f942bbb730e8b6dfa6232931902db")},
-            }
-        };
-        // END BLAKECOIN
-
-        chainTxData = ChainTxData{
-            // Data as of testnet genesis
-            1411788333,
-            1,
-            0.01
-        };
-
-    }
-};
-
-/**
- * Regression test
- */
-class CRegTestParams : public CChainParams {
-public:
-    CRegTestParams() {
-        strNetworkID = "regtest";
-        consensus.nSubsidyHalvingInterval = std::numeric_limits<int>::max(); // No halving (Lithium uses height-based tiers)
-        consensus.BIP34Height = 100000000; // BIP34 has not activated on regtest (far in the future so block v1 are not rejected in tests)
-        consensus.BIP34Hash = uint256();
-        consensus.BIP65Height = 1351; // BIP65 activated on regtest (Used in rpc activation tests)
-        consensus.BIP66Height = 1251; // BIP66 activated on regtest (Used in rpc activation tests)
-        consensus.powLimit = uint256S("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
-        // Keep regtest useful for local testing, but use Blakecoin's 3-minute cadence.
-        consensus.nPowTargetTimespan = 20 * 3 * 60; // 1 hour
-        consensus.nPowTargetSpacing = 3 * 60;
-        consensus.fPowAllowMinDifficultyBlocks = true;
-        consensus.fPowNoRetargeting = true;
-        consensus.fStrictChainId = false;
-        consensus.nAuxpowChainId = 0x0006;
-        consensus.nAuxpowStartHeight = 0;
-        consensus.nRuleChangeActivationThreshold = 108; // 75% for testchains
-        consensus.nMinerConfirmationWindow = 144; // Faster than normal for regtest (144 instead of 2016)
-        consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].bit = 28;
-        consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].nStartTime = 0;
-        consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].nTimeout = 999999999999ULL;
-        consensus.vDeployments[Consensus::DEPLOYMENT_CSV].bit = 0;
-        consensus.vDeployments[Consensus::DEPLOYMENT_CSV].nStartTime = Consensus::BIP9Deployment::ALWAYS_ACTIVE;
-        consensus.vDeployments[Consensus::DEPLOYMENT_CSV].nTimeout = Consensus::BIP9Deployment::NO_TIMEOUT;
-        consensus.vDeployments[Consensus::DEPLOYMENT_SEGWIT].bit = 1;
-        consensus.vDeployments[Consensus::DEPLOYMENT_SEGWIT].nStartTime = Consensus::BIP9Deployment::ALWAYS_ACTIVE;
-        consensus.vDeployments[Consensus::DEPLOYMENT_SEGWIT].nTimeout = Consensus::BIP9Deployment::NO_TIMEOUT;
-
-        // The best chain should have at least this much work.
-        consensus.nMinimumChainWork = uint256S("0x00");
-
-        // By default assume that the signatures in ancestors of this block are valid.
-        consensus.defaultAssumeValid = uint256S("0x00");
-
-        pchMessageStart[0] = 0xfa;
-        pchMessageStart[1] = 0xbf;
-        pchMessageStart[2] = 0xb5;
-        pchMessageStart[3] = 0xda;
-        nDefaultPort = 18444;
-        nPruneAfterHeight = 1000;
-
-        // Regtest reuses the legacy Lithium genesis for local-only testing.
-        genesis = CreateGenesisBlock(1411788333, 8298496, 503382015, 112, 5 * COIN);
-        consensus.hashGenesisBlock = uint256S("0x000000fcf39055b547e94e610f1008b8046f942bbb730e8b6dfa6232931902db");
-        assert(genesis.hashMerkleRoot == uint256S("0x2a1fd3e405c93b2011b4189e97cd658b1f5ca859eba01723af28dd21f4d6c008"));
-
-        vFixedSeeds.clear(); //!< Regtest mode doesn't have any fixed seeds.
-        vSeeds.clear();      //!< Regtest mode doesn't have any DNS seeds.
-
-        fMiningRequiresPeers = false;
-        fDefaultConsistencyChecks = true;
-        fRequireStandard = false;
-        fMineBlocksOnDemand = true;
-
-        // BEGIN BLAKECOIN: Regtest checkpoint
-        checkpointData = (CCheckpointData){
-            {
-                {0, uint256S("0x000000fcf39055b547e94e610f1008b8046f942bbb730e8b6dfa6232931902db")}
-            }
-        };
-        // END BLAKECOIN
-
-        chainTxData = ChainTxData{
-            0,
-            0,
-            0
-        };
-
-        // Regtest uses Lithium's mainnet address prefix for local testing.
-        base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,19);
-        base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,7);
-        base58Prefixes[SECRET_KEY] =     std::vector<unsigned char>(1,128);
-        base58Prefixes[EXT_PUBLIC_KEY] = {0x04, 0x88, 0xB2, 0x1E};
-        base58Prefixes[EXT_SECRET_KEY] = {0x04, 0x88, 0xAD, 0xE4};
-        bech32_hrp = "rlit";
-    }
-};
-
-static std::unique_ptr<CChainParams> globalChainParams;
+static std::unique_ptr<const CChainParams> globalChainParams;
 
 const CChainParams &Params() {
     assert(globalChainParams);
     return *globalChainParams;
 }
 
-std::unique_ptr<CChainParams> CreateChainParams(const std::string& chain)
+std::unique_ptr<const CChainParams> CreateChainParams(const ArgsManager& args, const std::string& chain)
 {
-    if (chain == CBaseChainParams::MAIN)
-        return std::unique_ptr<CChainParams>(new CMainParams());
-    else if (chain == CBaseChainParams::TESTNET)
-        return std::unique_ptr<CChainParams>(new CTestNetParams());
-    else if (chain == CBaseChainParams::REGTEST)
-        return std::unique_ptr<CChainParams>(new CRegTestParams());
+    if (chain == CBaseChainParams::MAIN) {
+        return CChainParams::Main();
+    } else if (chain == CBaseChainParams::TESTNET) {
+        return CChainParams::TestNet();
+    } else if (chain == CBaseChainParams::SIGNET) {
+        auto opts = CChainParams::SigNetOptions{};
+        ReadSigNetArgs(args, opts);
+        return CChainParams::SigNet(opts);
+    } else if (chain == CBaseChainParams::REGTEST) {
+        auto opts = CChainParams::RegTestOptions{};
+        ReadRegTestArgs(args, opts);
+        return CChainParams::RegTest(opts);
+    }
     throw std::runtime_error(strprintf("%s: Unknown chain %s.", __func__, chain));
 }
 
 void SelectParams(const std::string& network)
 {
     SelectBaseParams(network);
-    globalChainParams = CreateChainParams(network);
-}
-
-void UpdateVersionBitsParameters(Consensus::DeploymentPos d, int64_t nStartTime, int64_t nTimeout)
-{
-    globalChainParams->UpdateVersionBitsParameters(d, nStartTime, nTimeout);
+    globalChainParams = CreateChainParams(gArgs, network);
 }

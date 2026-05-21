@@ -1,9 +1,10 @@
 {
-    "txid": "8df6ed527472542dd5e137c242a7c5a9f337ac34f7b257ae4af886aeaebb51b0",
-    "hash": "8df6ed527472542dd5e137c242a7c5a9f337ac34f7b257ae4af886aeaebb51b0",
+    "txid": "56c034bba6c20aaa26babfb716f30eca3c1320b04f61e4dfafb31fc3fa7871b7",
+    "hash": "56c034bba6c20aaa26babfb716f30eca3c1320b04f61e4dfafb31fc3fa7871b7",
     "version": 2,
     "size": 85,
     "vsize": 85,
+    "weight": 340,
     "locktime": 0,
     "vin": [
         {
@@ -22,12 +23,10 @@
             "n": 0,
             "scriptPubKey": {
                 "asm": "OP_DUP OP_HASH160 1fc11f39be1729bf973a7ab6a615ca4729d64574 OP_EQUALVERIFY OP_CHECKSIG",
+                "desc": "addr(8hKN1MstWrUpQ1LKP4dVppoocAbvD1RMcL)#qpdmzwq8",
                 "hex": "76a9141fc11f39be1729bf973a7ab6a615ca4729d6457488ac",
-                "reqSigs": 1,
-                "type": "pubkeyhash",
-                "addresses": [
-                    "13tuJJDR2RgArmgfv6JScSdreahzgc4T6o"
-                ]
+                "address": "8hKN1MstWrUpQ1LKP4dVppoocAbvD1RMcL",
+                "type": "pubkeyhash"
             }
         }
     ],
