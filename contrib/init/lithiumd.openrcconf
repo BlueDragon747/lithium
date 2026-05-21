@@ -1,0 +1,33 @@
+# /etc/conf.d/lithiumd: config file for /etc/init.d/lithiumd
+
+# Config file location
+#LITHIUMD_CONFIGFILE="/etc/lithium/lithium.conf"
+
+# What directory to write pidfile to?  (created and owned by $LITHIUMD_USER)
+#LITHIUMD_PIDDIR="/var/run/lithiumd"
+
+# What filename to give the pidfile
+#LITHIUMD_PIDFILE="${LITHIUMD_PIDDIR}/lithiumd.pid"
+
+# Where to write lithiumd data (be mindful that the blockchain is large)
+#LITHIUMD_DATADIR="/var/lib/lithiumd"
+
+# User and group to own lithiumd process
+#LITHIUMD_USER="lithium"
+#LITHIUMD_GROUP="lithium"
+
+# Path to lithiumd executable
+#LITHIUMD_BIN="/usr/bin/lithiumd"
+
+# Nice value to run lithiumd under
+#LITHIUMD_NICE=0
+
+# Additional options (avoid -conf and -datadir, use flags above)
+#LITHIUMD_OPTS=""
+
+# The timeout in seconds OpenRC will wait for lithiumd to terminate
+# after a SIGTERM has been raised.
+# Note that this will be mapped as argument to start-stop-daemon's
+# '--retry' option, which means you can specify a retry schedule
+# here. For more information see man 8 start-stop-daemon.
+LITHIUMD_SIGTERM_TIMEOUT=600
