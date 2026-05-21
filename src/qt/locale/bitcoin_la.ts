@@ -577,7 +577,7 @@
     </message>
     <message>
         <source>M&amp;inimize on close</source>
-        <translation type="unfinished">M&amp;inifac ad claudendum</translation>
+        <translation type="unfinished">M&amp;inifac cum occluditur</translation>
     </message>
     <message>
         <source>&amp;Display</source>
