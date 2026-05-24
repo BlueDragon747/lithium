@@ -106,7 +106,9 @@ public:
         // Lithium SegWit is inherited from the 0.15.21 mainnet activation.
         // 0.25.2 buries this height and does not re-signal SegWit.
         consensus.SegwitHeight = 1956300;
-        consensus.MinBIP9WarningHeight = 0;
+        // Historical miners briefly set unknown BIP9 bits immediately before
+        // buried SegWit. Only warn on post-burial unknown versionbits.
+        consensus.MinBIP9WarningHeight = 1956300;
         consensus.powLimit = uint256S("000000ffff000000000000000000000000000000000000000000000000000000");
         consensus.nPowTargetTimespan = 20 * 3 * 60;
         consensus.nPowTargetSpacing = 3 * 60;
@@ -131,8 +133,8 @@ public:
         consensus.vDeployments[Consensus::DEPLOYMENT_TAPROOT].nTimeout = 1814407200;
         consensus.vDeployments[Consensus::DEPLOYMENT_TAPROOT].min_activation_height = 1980707;
 
-        consensus.nMinimumChainWork = uint256S("0x000000000000000000000000000000000000000000000081a5442b79493b9b3a");
-        consensus.defaultAssumeValid = uint256S("0x046a8cff07cfec07b9797e06e997faa1f6a515b5e5817444289fecdf9b220196");
+        consensus.nMinimumChainWork = uint256S("0x000000000000000000000000000000000000000000000081cf443903cbb00d9c");
+        consensus.defaultAssumeValid = uint256S("0x2cd972cd152d4e972a8fc6e48e4f2faafebccd229770f90195aece2965c01f0c");
 
         // Lithium AuxPoW chain identity (consumed by Phase 2 AuxPoW core).
         // mainnet: strict chain-ID, AuxPoW activates at historical height 160000.
@@ -195,6 +197,9 @@ public:
                 {1250000, uint256S("0xbdd59175ea75a7a6b99d93678a74c24a0f61ffe8ebde02b8cc1665e5a3eb9e79")},
                 {1937598, uint256S("0x046a8cff07cfec07b9797e06e997faa1f6a515b5e5817444289fecdf9b220196")},
                 {1956300, uint256S("0x4e361135d30a94db8923116d84750e96e0d576025962841b173e838005da6130")},
+                {1958000, uint256S("0x491ba955b5db6552efdfc48ee658d42bbb72872b1bf28aefe44cf16e59d83d67")},
+                {1960000, uint256S("0x2cd972cd152d4e972a8fc6e48e4f2faafebccd229770f90195aece2965c01f0c")},
+                {1961000, uint256S("0xe1c887174b1c50f9d12b3b62cfd4ee0bbc9461593b06c13a1962952f365f9a14")},
             }
         };
 
@@ -203,9 +208,9 @@ public:
         };
 
         chainTxData = ChainTxData{
-            .nTime    = 1646262870,
-            .nTxCount = 1628063,
-            .dTxRate  = 2800.0 / (24 * 60 * 60),
+            .nTime    = 1779159937,
+            .nTxCount = 2362486,
+            .dTxRate  = 0.005407511797236991,
         };
     }
 };

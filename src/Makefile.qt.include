@@ -174,8 +174,8 @@ QT_RES_FONTS = \
 QT_RES_ICONS = \
   qt/res/icons/add.png \
   qt/res/icons/address-book.png \
-  qt/res/icons/lithium.ico \
-  qt/res/icons/lithium_testnet.ico \
+  qt/res/icons/lithium_32.ico \
+  qt/res/icons/lithium_32_testnet.ico \
   qt/res/icons/lithium.png \
   qt/res/icons/chevron.png \
   qt/res/icons/clock1.png \
