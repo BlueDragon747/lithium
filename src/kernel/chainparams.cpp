@@ -155,8 +155,8 @@ public:
         pchMessageStart[3] = 0xd5;
         nDefaultPort = 12007;
         nPruneAfterHeight = 100000;
-        m_assumed_blockchain_size = 0;
-        m_assumed_chain_state_size = 0;
+        m_assumed_blockchain_size = 5;
+        m_assumed_chain_state_size = 1;
 
         genesis = CreateLithiumGenesisBlock(1411788333, 8298496, 503382015, 112, 5 * COIN);
         consensus.hashGenesisBlock = genesis.GetHash();
@@ -204,7 +204,13 @@ public:
         };
 
         m_assumeutxo_data = MapAssumeutxo{
-         // TODO to be specified in a future patch.
+            {
+                1962644,
+                {
+                    AssumeutxoHash{uint256S("0x20d1e63b9bf187495c5c628d667c9316601274a4dee823e4d5c67d6deb1c0b25")},
+                    2365155,
+                },
+            },
         };
 
         chainTxData = ChainTxData{
@@ -538,7 +544,7 @@ public:
             {
                 110,
                 {
-                    AssumeutxoHash{uint256S("0x09d3598d6409eb21800ec1f2fa6b8666442590fc54e04750a732598754d8cd42")},
+                    AssumeutxoHash{uint256S("0x5514258d23ea22f87c7ab90102d5a9d5de54a32bb9a4d694668acfa599f483e2")},
                     111,
                 },
             },
