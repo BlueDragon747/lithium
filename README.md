@@ -38,6 +38,49 @@ Lithium is a Blake-family merged-mined cryptocurrency. This release is built
 for compatibility with existing Lithium history while adding modern wallet,
 script, and release-hardening support from the upstream v25.2 Core codebase.
 
+- Uses the Blake-256 hashing algorithm, 8 rounds
+- Based on the v25.2 Core codebase
+- Uses AuxPoW / merged mining with chain ID `0x0006`
+- Uses the autotools build system (`./autogen.sh`, `./configure`, `make`)
+- Supports legacy Berkeley DB wallets and descriptor SQLite wallets
+- Keeps Lithium txids on single SHA-256
+- Uses HASH256/double SHA-256 for witness-v0 BIP143 signing
+- Keeps BIP340/BIP341/BIP342 Taproot tagged hashes byte-compatible with upstream vectors
+
+| Network Info | Value |
+|---|---|
+| Algorithm | Blake-256, 8 rounds |
+| Block time | 3 minutes |
+| Difficulty retarget | Every 20 blocks |
+| PoW limit | `0x000000ffff000000000000000000000000000000000000000000000000000000` |
+| Coinbase maturity | 120 blocks |
+| AuxPoW chain ID | `0x0006` |
+| AuxPoW start height | `160000` mainnet, `0` testnet/regtest |
+| Default P2P port | 12007 |
+| RPC port | 12000 |
+| Regtest RPC port | 18332 |
+| Mainnet genesis | `000000fcf39055b547e94e610f1008b8046f942bbb730e8b6dfa6232931902db` |
+| Mainnet Bech32 HRP | `lit` |
+| Testnet Bech32 HRP | `tlit` |
+| Regtest Bech32 HRP | `rlit` |
+
+## Block Subsidy
+
+Lithium uses a forward-activated subsidy ladder. `nSubsidyHalvingInterval` is
+intentionally unused (set to `INT_MAX` in chainparams):
+
+- Height `0` (genesis): `5 LIT`
+- Before activation height `1949476`: `50 LIT` flat (preserves the 0.15.21 chain history)
+- At/after activation, the legacy 0.8 height-tier ladder applies:
+  - `< 1999`: `0.48 LIT`
+  - `< 175000`: `48 LIT`
+  - `< 350000`: `24 LIT`
+  - `< 525000`: `12 LIT`
+  - `< 650000`: `6 LIT`
+  - `< 800000`: `3 LIT`
+  - `< 975000`: `1.5 LIT`
+  - otherwise: `1 LIT`
+
 ## Wallet Support
 
 This release is a dual-wallet build:

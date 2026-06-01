@@ -231,12 +231,14 @@ public:
         consensus.signet_blocks = false;
         consensus.signet_challenge.clear();
         consensus.nSubsidyHalvingInterval = std::numeric_limits<int>::max();
-        // Testnet keeps BIP34/BIP65/BIP66 at far-future heights so legacy-style
-        // test blocks remain usable.
-        consensus.BIP34Height = 100000000;
+        // Lithium 25.2 testnet is a feature-test/reset network: keep SegWit,
+        // CLTV, strict-DER, BIP34 coinbase height, and Taproot available from
+        // height 1 so DEX atomic-swap and Taproot QA can run before mainnet
+        // activation gates are opened.
+        consensus.BIP34Height = 1;
         consensus.BIP34Hash = uint256{};
-        consensus.BIP65Height = 100000000;
-        consensus.BIP66Height = 100000000;
+        consensus.BIP65Height = 1;
+        consensus.BIP66Height = 1;
         // CSV (BIP68/112/113) is always active for Lithium test coverage.
         consensus.CSVHeight = 1;
         // Testnet SegWit is active from height 1 so AuxPoW and atomic-swap
@@ -244,21 +246,21 @@ public:
         // activation.
         consensus.SegwitHeight = 1;
         consensus.MinBIP9WarningHeight = 0;
-        consensus.powLimit = uint256S("000000ffff000000000000000000000000000000000000000000000000000000");
+        // Private 25.2 feature-testnet uses regtest-style PoW so local CPU
+        // pool tests can advance blocks quickly while mainnet stays unchanged.
+        consensus.powLimit = uint256S("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
         consensus.nPowTargetTimespan = 20 * 3 * 60;
         consensus.nPowTargetSpacing = 3 * 60;
         consensus.fPowAllowMinDifficultyBlocks = true;
-        consensus.fPowNoRetargeting = false;
+        consensus.fPowNoRetargeting = true;
         consensus.nRuleChangeActivationThreshold = 15;
         consensus.nMinerConfirmationWindow = 20;
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].bit = 28;
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].nStartTime = 1199145601;
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].nTimeout = 1230767999;
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].min_activation_height = 0;
-        // Testnet Taproot remains inactive until a dedicated testnet activation
-        // window is chosen.
         consensus.vDeployments[Consensus::DEPLOYMENT_TAPROOT].bit = 2;
-        consensus.vDeployments[Consensus::DEPLOYMENT_TAPROOT].nStartTime = Consensus::BIP9Deployment::NEVER_ACTIVE;
+        consensus.vDeployments[Consensus::DEPLOYMENT_TAPROOT].nStartTime = Consensus::BIP9Deployment::ALWAYS_ACTIVE;
         consensus.vDeployments[Consensus::DEPLOYMENT_TAPROOT].nTimeout = Consensus::BIP9Deployment::NO_TIMEOUT;
         consensus.vDeployments[Consensus::DEPLOYMENT_TAPROOT].min_activation_height = 0;
 
